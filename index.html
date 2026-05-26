@@ -719,7 +719,7 @@ function ensureSheetName(wb, name) {
 // 原版 _rate_formula: =IF(F2="","",IF(F2=0,"",E2/F2))
 function rateFormula(colE, colF, excelRow) {
   var f = 'IF(' + colF + excelRow + '="","",IF(' + colF + excelRow + '=0,"",' + colE + excelRow + '/' + colF + excelRow + '))';
-  return { t: 'n', f: f, z: '0.0%' };
+  return { f: f, z: '0.0%' };
 }
 
 function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
@@ -756,7 +756,7 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
   // 合计行 E 列 SUM 公式
   var sumRow = grouped.length + 1;
   cellAddr = XLSX.utils.encode_cell({r: sumRow, c: 4});
-  ws1[cellAddr] = { t: 'n', f: 'SUM(E2:E' + lastDataRow + ')' };
+  ws1[cellAddr] = { f: 'SUM(E2:E' + lastDataRow + ')' };
 
   wb.Sheets[outName] = ws1;
 
@@ -804,7 +804,7 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
   var edSumRow = editorRows.length + 1;
   var edLastDataRow = editorRows.length + 1;
   cellAddr = XLSX.utils.encode_cell({r: edSumRow, c: 1});
-  ws3[cellAddr] = { t: 'n', f: 'SUM(B2:B' + edLastDataRow + ')' };
+  ws3[cellAddr] = { f: 'SUM(B2:B' + edLastDataRow + ')' };
 
   wb.Sheets[editorName] = ws3;
 }
