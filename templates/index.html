@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新闻采编统计工具</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+
+<div class="titlebar">
+  <div class="titlebar-dots">
+    <span class="dot dot-red"></span>
+    <span class="dot dot-yellow"></span>
+    <span class="dot dot-green"></span>
+  </div>
+  <span class="titlebar-text">新闻采编统计工具</span>
+</div>
+
+<div class="app-body">
+
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-icon">统</div>
+      <div class="brand-text">
+        <div class="brand-title">采编统计</div>
+        <div class="brand-sub">新闻数据分析平台</div>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="nav-label">工作台</div>
+    <nav class="nav-menu" id="navMenu">
+      <button class="nav-item active" data-page="summary">统计汇总</button>
+      <button class="nav-item" data-page="progress">达成进度</button>
+      <button class="nav-item" data-page="editor">编辑统计</button>
+      <button class="nav-item" data-page="settings">设置</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="file-status" id="fileStatus">
+        <span class="file-dot" id="fileDot"></span>
+        <span class="file-name" id="fileName">未选择文件</span>
+      </div>
+      <label class="upload-btn" id="uploadLabel" for="fileInput">导入 Excel 文件</label>
+      <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+      <button class="download-btn" id="downloadBtn" style="display:none" onclick="downloadExcel()">下载统计结果</button>
+    </div>
+  </aside>
+
+  <main class="content">
+
+    <!-- 统计汇总 -->
+    <section class="page active" id="page-summary">
+      <div class="page-topbar">
+        <div class="page-topbar-left">
+          <div class="page-title">统计汇总</div>
+          <div class="page-subtitle">导入文件后自动统计 · 结果同步写入 Excel</div>
+        </div>
+        <div class="page-badges" id="summaryBadges">
+          <span class="badge badge-gray">等待导入文件</span>
+        </div>
+      </div>
+      <div class="page-divider"></div>
+
+      <div class="awards-row" id="awardsRow">
+        <div class="award-card">
+          <div class="award-header"><span class="award-icon" style="color:#D97706">&#x1F3C6;</span><span class="award-title">五谷丰登 · 年度达成率</span></div>
+          <div class="award-sub">年度汇总数/指标最高</div>
+          <div class="award-list" id="awardRateList"></div>
+        </div>
+        <div class="award-card">
+          <div class="award-header"><span class="award-icon" style="color:#7C3AED">&#x1F3AF;</span><span class="award-title">弹无虚发 · 刊发率</span></div>
+          <div class="award-sub">提交稿件刊发率最高</div>
+          <div class="award-list" id="awardHitList"></div>
+        </div>
+        <div class="award-card">
+          <div class="award-header"><span class="award-icon" style="color:#10B981">&#x270D;&#xFE0F;</span><span class="award-title">笔耕不辍 · 编稿最多</span></div>
+          <div class="award-sub">年度发主编编稿数前 2 名编辑</div>
+          <div class="award-editor-names" id="awardEditorNames"></div>
+        </div>
+      </div>
+
+      <div class="table-wrapper" id="summaryTableWrapper">
+        <div class="table-card">
+          <div class="table-card-head">
+            <span class="table-card-title">统计明细</span>
+            <span class="pill" id="summaryPill" style="display:none"></span>
+          </div>
+          <div class="table-divider"></div>
+          <div class="table-scroll" id="summaryTableBody">
+            <div class="empty-state">请点击左侧「导入 Excel 文件」开始</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 达成进度 -->
+    <section class="page" id="page-progress">
+      <div class="page-topbar">
+        <div class="page-topbar-left">
+          <div class="page-title">达成进度</div>
+          <div class="page-subtitle">按媒体通联汇总指标与提报，排序：提报达成率从高到低</div>
+        </div>
+      </div>
+      <div class="page-divider"></div>
+      <div class="table-wrapper">
+        <div class="table-card">
+          <div class="table-card-head">
+            <span class="table-card-title">媒体通联达成进度</span>
+            <span class="pill" id="progressPill" style="display:none"></span>
+          </div>
+          <div class="table-divider"></div>
+          <div class="table-scroll" id="progressTableBody">
+            <div class="empty-state">请先导入 Excel 文件</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 编辑统计 -->
+    <section class="page" id="page-editor">
+      <div class="page-topbar">
+        <div class="page-topbar-left">
+          <div class="page-title">编辑统计</div>
+          <div class="page-subtitle">统计每位编辑发主编的篇数</div>
+        </div>
+      </div>
+      <div class="page-divider"></div>
+      <div class="table-wrapper">
+        <div class="table-card">
+          <div class="table-card-head">
+            <span class="table-card-title">编辑发主编统计</span>
+            <span class="pill" id="editorPill" style="display:none"></span>
+          </div>
+          <div class="table-divider"></div>
+          <div class="table-scroll" id="editorTableBody">
+            <div class="empty-state">请先导入 Excel 文件</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 设置 -->
+    <section class="page" id="page-settings">
+      <div class="page-topbar">
+        <div class="page-topbar-left">
+          <div class="page-title">设置</div>
+          <div class="page-subtitle">配置统计规则和显示选项</div>
+        </div>
+      </div>
+      <div class="page-divider"></div>
+      <div class="settings-scroll">
+        <div class="settings-section">
+          <div class="settings-label">Sheet 名称</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <span class="settings-key">数据来源 Sheet</span>
+              <input class="settings-input" id="cfgDataSheet" type="text">
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">指标档案 Sheet</span>
+              <input class="settings-input" id="cfgIndexSheet" type="text">
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">输出结果 Sheet</span>
+              <input class="settings-input" id="cfgOutputSheet" type="text">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label">四维匹配人员</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <span class="settings-key">特殊人员名单</span>
+              <input class="settings-input" id="cfgSpecialPersons" type="text" style="flex:1">
+              <span class="settings-hint">顿号分隔</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label">达成率颜色阈值</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <span class="settings-key">绿色（高达成）&ge; %</span>
+              <input class="settings-input short" id="cfgRateHigh" type="number" min="0" max="100">
+            </div>
+            <div class="settings-row">
+              <span class="settings-key">黄色（中达成）&ge; %</span>
+              <input class="settings-input short" id="cfgRateMid" type="number" min="0" max="100">
+            </div>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-label">其他</div>
+          <div class="settings-card">
+            <div class="settings-row">
+              <span class="settings-key">统计完成后自动下载文件</span>
+              <label class="switch">
+                <input type="checkbox" id="cfgAutoOpen">
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <button class="save-settings-btn" onclick="saveSettings()">保存设置</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="/static/app.js"></script>
+</body>
+</html>
