@@ -9,4 +9,9 @@ dist/
 *.tmp
 uploads/
 *.log
+.claude/
+*.mp4
+*.m4a
+*.docx
+uploads/
 .DS_Store
