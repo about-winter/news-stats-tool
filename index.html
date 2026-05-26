@@ -707,10 +707,19 @@ function runStats(wb, cfg, filename) {
   };
 }
 
+function ensureSheetName(wb, name) {
+  // 确保 sheet 名在 SheetNames 和 Sheets 中同步
+  if (wb.Sheets[name]) delete wb.Sheets[name];
+  var idx = wb.SheetNames.indexOf(name);
+  if (idx < 0) {
+    wb.SheetNames.push(name);
+  }
+}
+
 function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
   // 统计汇总 sheet
   var outName = cfg.output_sheet;
-  if (wb.Sheets[outName]) delete wb.Sheets[outName];
+  ensureSheetName(wb, outName);
   var summaryAoa = [['人员', '栏目', '成稿/线索', '新闻相关部门', '汇总数', '指标', '达成率']];
   grouped.forEach(function(g, i) {
     summaryAoa.push([
@@ -719,7 +728,7 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
       g['成稿/线索'],
       g['新闻相关部门'] || '',
       g['汇总数'],
-      g['指标'] || '',
+      g['指标'] != null ? g['指标'] : '',
       g['指标'] != null && g['指标'] > 0 ? (g['汇总数'] / g['指标']) : ''
     ]);
   });
@@ -727,17 +736,18 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
   summaryAoa.push(['合计', '', '', '', sumTotal, '', '']);
   var ws1 = XLSX.utils.aoa_to_sheet(summaryAoa);
   // 达成率格式化
-  var range1 = XLSX.utils.decode_range(ws1['!ref']);
   for (var R = 1; R <= grouped.length; R++) {
-    var cell = ws1[XLSX.utils.encode_cell({r: R, c: 6})];
-    if (cell && cell.v !== '' && cell.v !== undefined && grouped[R-1]['指标'] > 0) {
+    var cellAddr = XLSX.utils.encode_cell({r: R, c: 6});
+    var cell = ws1[cellAddr];
+    if (cell && cell.v !== '' && cell.v !== undefined && grouped[R-1]['指标'] != null && grouped[R-1]['指标'] > 0) {
       cell.z = '0.0%';
     }
   }
   wb.Sheets[outName] = ws1;
 
   // 达成进度 sheet
-  if (wb.Sheets['达成进度']) delete wb.Sheets['达成进度'];
+  var progName = '达成进度';
+  ensureSheetName(wb, progName);
   var progAoa = [['媒体通联', '指标总数', '提报总数', '提报达成率', '刊发总数', '刊发率']];
   progressRows.forEach(function(p) {
     progAoa.push([
@@ -750,24 +760,24 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
     ]);
   });
   var ws2 = XLSX.utils.aoa_to_sheet(progAoa);
-  var range2 = XLSX.utils.decode_range(ws2['!ref']);
   for (var R2 = 1; R2 <= progressRows.length; R2++) {
     var c3 = ws2[XLSX.utils.encode_cell({r: R2, c: 3})];
     if (c3 && c3.v !== '' && c3.v !== undefined && progressRows[R2-1]['指标总数'] > 0) c3.z = '0.0%';
     var c5 = ws2[XLSX.utils.encode_cell({r: R2, c: 5})];
     if (c5 && c5.v !== '' && c5.v !== undefined && progressRows[R2-1]['提报总数'] > 0) c5.z = '0.0%';
   }
-  wb.Sheets['达成进度'] = ws2;
+  wb.Sheets[progName] = ws2;
 
   // 编辑发主编统计 sheet
-  if (wb.Sheets['编辑发主编统计']) delete wb.Sheets['编辑发主编统计'];
+  var editorName = '编辑发主编统计';
+  ensureSheetName(wb, editorName);
   var edAoa = [['编辑', '发主编总数']];
   editorRows.forEach(function(e) {
     edAoa.push([e['编辑'], e['发主编总数']]);
   });
   var edTotal = editorRows.reduce(function(s, r) { return s + r['发主编总数']; }, 0);
   edAoa.push(['合计', edTotal]);
-  wb.Sheets['编辑发主编统计'] = XLSX.utils.aoa_to_sheet(edAoa);
+  wb.Sheets[editorName] = XLSX.utils.aoa_to_sheet(edAoa);
 }
 
 function top3Distinct(sortedArr, nameKey, valKey, extraKeys) {
