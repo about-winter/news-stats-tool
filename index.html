@@ -716,12 +716,22 @@ function ensureSheetName(wb, name) {
   }
 }
 
+// 原版 _rate_formula: =IF(F2="","",IF(F2=0,"",E2/F2))
+function rateFormula(colE, colF, excelRow) {
+  var f = 'IF(' + colF + excelRow + '="","",IF(' + colF + excelRow + '=0,"",' + colE + excelRow + '/' + colF + excelRow + '))';
+  return { t: 'n', f: f, z: '0.0%' };
+}
+
 function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
-  // 统计汇总 sheet
+  var i, cellAddr;
+
+  // ── 统计汇总 sheet ──
   var outName = cfg.output_sheet;
   ensureSheetName(wb, outName);
+
   var summaryAoa = [['人员', '栏目', '成稿/线索', '新闻相关部门', '汇总数', '指标', '达成率']];
-  grouped.forEach(function(g, i) {
+  for (i = 0; i < grouped.length; i++) {
+    var g = grouped[i];
     summaryAoa.push([
       g['人员'],
       g['栏目'],
@@ -729,55 +739,74 @@ function writeResultsToExcel(wb, grouped, progressRows, editorRows, cfg) {
       g['新闻相关部门'] || '',
       g['汇总数'],
       g['指标'] != null ? g['指标'] : '',
-      g['指标'] != null && g['指标'] > 0 ? (g['汇总数'] / g['指标']) : ''
+      '' // 达成率 — 下面用公式覆盖
     ]);
-  });
-  var sumTotal = grouped.reduce(function(s, g) { return s + g['汇总数']; }, 0);
-  summaryAoa.push(['合计', '', '', '', sumTotal, '', '']);
-  var ws1 = XLSX.utils.aoa_to_sheet(summaryAoa);
-  // 达成率格式化
-  for (var R = 1; R <= grouped.length; R++) {
-    var cellAddr = XLSX.utils.encode_cell({r: R, c: 6});
-    var cell = ws1[cellAddr];
-    if (cell && cell.v !== '' && cell.v !== undefined && grouped[R-1]['指标'] != null && grouped[R-1]['指标'] > 0) {
-      cell.z = '0.0%';
-    }
   }
+  // 合计行：汇总数用 SUM 公式
+  var lastDataRow = grouped.length + 1; // Excel 行号：最后一行数据
+  summaryAoa.push(['合计', '', '', '', '', '', '']);
+  var ws1 = XLSX.utils.aoa_to_sheet(summaryAoa);
+
+  // 达成率 = 公式 column
+  for (i = 0; i < grouped.length; i++) {
+    var excelRow = i + 2;
+    cellAddr = XLSX.utils.encode_cell({r: i + 1, c: 6});
+    ws1[cellAddr] = rateFormula('E', 'F', excelRow);
+  }
+  // 合计行 E 列 SUM 公式
+  var sumRow = grouped.length + 1;
+  cellAddr = XLSX.utils.encode_cell({r: sumRow, c: 4});
+  ws1[cellAddr] = { t: 'n', f: 'SUM(E2:E' + lastDataRow + ')' };
+
   wb.Sheets[outName] = ws1;
 
-  // 达成进度 sheet
+  // ── 达成进度 sheet ──
   var progName = '达成进度';
   ensureSheetName(wb, progName);
+
   var progAoa = [['媒体通联', '指标总数', '提报总数', '提报达成率', '刊发总数', '刊发率']];
-  progressRows.forEach(function(p) {
+  for (i = 0; i < progressRows.length; i++) {
+    var p = progressRows[i];
     progAoa.push([
       p['媒体通联'],
       p['指标总数'],
       p['提报总数'],
-      p['指标总数'] > 0 ? (p['提报总数'] / p['指标总数']) : '',
+      '', // 提报达成率 — 公式
       p['刊发总数'],
-      p['提报总数'] > 0 ? (p['刊发总数'] / p['提报总数']) : ''
+      ''  // 刊发率 — 公式
     ]);
-  });
-  var ws2 = XLSX.utils.aoa_to_sheet(progAoa);
-  for (var R2 = 1; R2 <= progressRows.length; R2++) {
-    var c3 = ws2[XLSX.utils.encode_cell({r: R2, c: 3})];
-    if (c3 && c3.v !== '' && c3.v !== undefined && progressRows[R2-1]['指标总数'] > 0) c3.z = '0.0%';
-    var c5 = ws2[XLSX.utils.encode_cell({r: R2, c: 5})];
-    if (c5 && c5.v !== '' && c5.v !== undefined && progressRows[R2-1]['提报总数'] > 0) c5.z = '0.0%';
   }
+  var ws2 = XLSX.utils.aoa_to_sheet(progAoa);
+
+  for (i = 0; i < progressRows.length; i++) {
+    var er2 = i + 2;
+    // 提报达成率 = C{er}/B{er}
+    cellAddr = XLSX.utils.encode_cell({r: i + 1, c: 3});
+    ws2[cellAddr] = rateFormula('C', 'B', er2);
+    // 刊发率 = E{er}/C{er}
+    cellAddr = XLSX.utils.encode_cell({r: i + 1, c: 5});
+    ws2[cellAddr] = rateFormula('E', 'C', er2);
+  }
+
   wb.Sheets[progName] = ws2;
 
-  // 编辑发主编统计 sheet
+  // ── 编辑发主编统计 sheet ──
   var editorName = '编辑发主编统计';
   ensureSheetName(wb, editorName);
+
   var edAoa = [['编辑', '发主编总数']];
-  editorRows.forEach(function(e) {
-    edAoa.push([e['编辑'], e['发主编总数']]);
-  });
-  var edTotal = editorRows.reduce(function(s, r) { return s + r['发主编总数']; }, 0);
-  edAoa.push(['合计', edTotal]);
-  wb.Sheets[editorName] = XLSX.utils.aoa_to_sheet(edAoa);
+  for (i = 0; i < editorRows.length; i++) {
+    edAoa.push([editorRows[i]['编辑'], editorRows[i]['发主编总数']]);
+  }
+  edAoa.push(['合计', '']); // 发主编总数 — SUM 公式
+  var ws3 = XLSX.utils.aoa_to_sheet(edAoa);
+
+  var edSumRow = editorRows.length + 1;
+  var edLastDataRow = editorRows.length + 1;
+  cellAddr = XLSX.utils.encode_cell({r: edSumRow, c: 1});
+  ws3[cellAddr] = { t: 'n', f: 'SUM(B2:B' + edLastDataRow + ')' };
+
+  wb.Sheets[editorName] = ws3;
 }
 
 function top3Distinct(sortedArr, nameKey, valKey, extraKeys) {
